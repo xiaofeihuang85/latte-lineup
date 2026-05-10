@@ -193,12 +193,6 @@ button:hover {
   gap: 16px;
 }
 
-.summary-tools {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .order-count {
   margin-bottom: 0;
   font-weight: 700;
@@ -298,11 +292,6 @@ button:hover {
   .summary-header {
     align-items: start;
     flex-direction: column;
-  }
-
-  .summary-tools {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .syrup-grid {

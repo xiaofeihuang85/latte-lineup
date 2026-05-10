@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyq9ujfehDZn2bEI1r4gRbFFmJhuLAHa-wpbD_nw_518hWxhias9hqF7eizGEdRsar9Pw/exec";
+const STORAGE_KEY = "latte-lineup-orders";
 
 const milkOrder = ["2%", "2% lactose free", "soy", "oat"];
 const syrupOrder = [
@@ -18,15 +18,13 @@ const formMessage = document.getElementById("form-message");
 const groupedOrders = document.getElementById("grouped-orders");
 const orderCount = document.getElementById("order-count");
 const clearOrdersButton = document.getElementById("clear-orders");
-const refreshOrdersButton = document.getElementById("refresh-orders");
 const emptyStateTemplate = document.getElementById("empty-state-template");
 
-let orders = [];
-let loadingOrders = false;
+let orders = loadOrders();
 
-initialize();
+renderOrders();
 
-form.addEventListener("submit", async (event) => {
+form.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const name = nameInput.value.trim();
@@ -38,56 +36,33 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
-  if (!isConfigured()) {
-    setMessage("Add your Apps Script URL in script.js before using the shared order list.", "error");
-    return;
-  }
+  orders.push({
+    id: crypto.randomUUID(),
+    name,
+    milk,
+    syrup
+  });
 
-  try {
-    setBusyState(true);
-    await postToApi("add", { name, milk, syrup });
-    form.reset();
-    nameInput.focus();
-    await fetchOrders(`${name} added to the latte list.`);
-  } catch (error) {
-    setMessage(error.message, "error");
-  } finally {
-    setBusyState(false);
-  }
+  persistOrders();
+  renderOrders();
+  form.reset();
+  nameInput.focus();
+  setMessage(`${name} added to the latte list.`, "success");
 });
 
-clearOrdersButton.addEventListener("click", async () => {
+clearOrdersButton.addEventListener("click", () => {
   if (!orders.length) {
     setMessage("There are no orders to clear.", "error");
     return;
   }
 
-  if (!isConfigured()) {
-    setMessage("Add your Apps Script URL in script.js before using the shared order list.", "error");
-    return;
-  }
-
-  try {
-    setBusyState(true);
-    await postToApi("clear");
-    await fetchOrders("All orders cleared.");
-  } catch (error) {
-    setMessage(error.message, "error");
-  } finally {
-    setBusyState(false);
-  }
+  orders = [];
+  persistOrders();
+  renderOrders();
+  setMessage("All orders cleared.", "success");
 });
 
-refreshOrdersButton.addEventListener("click", async () => {
-  if (!isConfigured()) {
-    setMessage("Add your Apps Script URL in script.js before using the shared order list.", "error");
-    return;
-  }
-
-  await fetchOrders("Orders refreshed.");
-});
-
-groupedOrders.addEventListener("click", async (event) => {
+groupedOrders.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-order-id]");
 
   if (!button) {
@@ -97,91 +72,38 @@ groupedOrders.addEventListener("click", async (event) => {
   const orderId = button.dataset.orderId;
   const match = orders.find((order) => order.id === orderId);
 
-  try {
-    setBusyState(true);
-    await postToApi("delete", { id: orderId });
-    await fetchOrders(match ? `${match.name} removed from the latte list.` : "Order removed.");
-  } catch (error) {
-    setMessage(error.message, "error");
-  } finally {
-    setBusyState(false);
+  orders = orders.filter((order) => order.id !== orderId);
+  persistOrders();
+  renderOrders();
+
+  if (match) {
+    setMessage(`${match.name} removed from the latte list.`, "success");
   }
 });
 
-async function initialize() {
-  renderOrders();
-
-  if (!isConfigured()) {
-    setMessage("Add your Apps Script URL in script.js to connect this page to Google Sheets.", "error");
-    return;
-  }
-
-  await fetchOrders();
-}
-
-function isConfigured() {
-  return APPS_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbyq9ujfehDZn2bEI1r4gRbFFmJhuLAHa-wpbD_nw_518hWxhias9hqF7eizGEdRsar9Pw/exec";
-}
-
-async function fetchOrders(successMessage) {
-  if (loadingOrders) {
-    return;
-  }
-
+function loadOrders() {
   try {
-    loadingOrders = true;
-    setBusyState(true);
-    const response = await fetch(`${APPS_SCRIPT_URL}?action=list`, {
-      method: "GET",
-      cache: "no-store"
-    });
-    const payload = await response.json();
+    const savedValue = localStorage.getItem(STORAGE_KEY);
 
-    if (!response.ok || !payload.ok) {
-      throw new Error(payload.error || "Unable to load orders from Google Sheets.");
+    if (!savedValue) {
+      return [];
     }
 
-    orders = Array.isArray(payload.orders) ? payload.orders.filter(isValidOrder) : [];
-    renderOrders();
+    const parsed = JSON.parse(savedValue);
 
-    if (successMessage) {
-      setMessage(successMessage, "success");
-    } else {
-      setMessage("Connected to Google Sheets.", "success");
+    if (!Array.isArray(parsed)) {
+      return [];
     }
+
+    return parsed.filter(isValidOrder);
   } catch (error) {
-    setMessage(error.message, "error");
-  } finally {
-    loadingOrders = false;
-    setBusyState(false);
+    console.error("Unable to read saved orders.", error);
+    return [];
   }
 }
 
-async function postToApi(action, data = {}) {
-  const body = new URLSearchParams({
-    action,
-    ...data
-  });
-
-  const response = await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body
-  });
-
-  const payload = await response.json();
-
-  if (!response.ok || !payload.ok) {
-    throw new Error(payload.error || "Request to Google Sheets failed.");
-  }
-
-  return payload;
-}
-
-function setBusyState(isBusy) {
-  form.querySelectorAll("input, select, button").forEach((element) => {
-    element.disabled = isBusy;
-  });
-  refreshOrdersButton.disabled = isBusy;
+function persistOrders() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
 }
 
 function isValidOrder(order) {
@@ -202,11 +124,6 @@ function setMessage(message, tone) {
 function renderOrders() {
   groupedOrders.replaceChildren();
   orderCount.textContent = `${orders.length} order${orders.length === 1 ? "" : "s"}`;
-
-  if (!isConfigured()) {
-    groupedOrders.append(createInfoState("Google Sheets is not connected yet. Follow the README setup steps, then paste your Apps Script web app URL into script.js."));
-    return;
-  }
 
   if (!orders.length) {
     groupedOrders.append(emptyStateTemplate.content.cloneNode(true));
@@ -292,15 +209,4 @@ function groupOrders(orderList) {
     result[order.milk][order.syrup].push(order);
     return result;
   }, {});
-}
-
-function createInfoState(message) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "empty-state";
-
-  const text = document.createElement("p");
-  text.textContent = message;
-
-  wrapper.append(text);
-  return wrapper;
 }
