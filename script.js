@@ -203,7 +203,7 @@ function renderOrders() {
           if (order.note) {
             const noteText = document.createElement("span");
             noteText.className = "order-note";
-            noteText.textContent = order.note;
+            noteText.textContent = `Special request: ${order.note}`;
             orderCopy.append(noteText);
           }
 
