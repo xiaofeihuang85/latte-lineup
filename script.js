@@ -14,11 +14,14 @@ const form = document.getElementById("order-form");
 const nameInput = document.getElementById("name");
 const milkSelect = document.getElementById("milk");
 const syrupSelect = document.getElementById("syrup");
+const noteInput = document.getElementById("note");
 const formMessage = document.getElementById("form-message");
 const groupedOrders = document.getElementById("grouped-orders");
 const orderCount = document.getElementById("order-count");
 const clearOrdersButton = document.getElementById("clear-orders");
 const emptyStateTemplate = document.getElementById("empty-state-template");
+
+const NOTE_LIMIT = 160;
 
 let orders = loadOrders();
 
@@ -30,9 +33,15 @@ form.addEventListener("submit", (event) => {
   const name = nameInput.value.trim();
   const milk = milkSelect.value;
   const syrup = syrupSelect.value;
+  const note = noteInput.value.trim();
 
   if (!name || !milk || !syrup) {
     setMessage("Please enter a name and choose both a milk and syrup.", "error");
+    return;
+  }
+
+  if (note.length > NOTE_LIMIT) {
+    setMessage(`Special requests must be ${NOTE_LIMIT} characters or fewer.`, "error");
     return;
   }
 
@@ -40,7 +49,8 @@ form.addEventListener("submit", (event) => {
     id: crypto.randomUUID(),
     name,
     milk,
-    syrup
+    syrup,
+    note
   });
 
   persistOrders();
@@ -95,7 +105,7 @@ function loadOrders() {
       return [];
     }
 
-    return parsed.filter(isValidOrder);
+    return parsed.filter(isValidOrder).map(normalizeOrder);
   } catch (error) {
     console.error("Unable to read saved orders.", error);
     return [];
@@ -111,9 +121,17 @@ function isValidOrder(order) {
     order &&
     typeof order.id === "string" &&
     typeof order.name === "string" &&
+    (typeof order.note === "undefined" || typeof order.note === "string") &&
     milkOrder.includes(order.milk) &&
     syrupOrder.includes(order.syrup)
   );
+}
+
+function normalizeOrder(order) {
+  return {
+    ...order,
+    note: typeof order.note === "string" ? order.note.trim() : ""
+  };
 }
 
 function setMessage(message, tone) {
@@ -173,8 +191,21 @@ function renderOrders() {
           const nameItem = document.createElement("li");
           nameItem.className = "name-pill";
 
+          const orderCopy = document.createElement("div");
+          orderCopy.className = "order-copy";
+
           const nameText = document.createElement("span");
+          nameText.className = "order-name";
           nameText.textContent = order.name;
+
+          orderCopy.append(nameText);
+
+          if (order.note) {
+            const noteText = document.createElement("span");
+            noteText.className = "order-note";
+            noteText.textContent = order.note;
+            orderCopy.append(noteText);
+          }
 
           const removeButton = document.createElement("button");
           removeButton.type = "button";
@@ -183,7 +214,7 @@ function renderOrders() {
           removeButton.setAttribute("aria-label", `Remove ${order.name}`);
           removeButton.textContent = "Remove";
 
-          nameItem.append(nameText, removeButton);
+          nameItem.append(orderCopy, removeButton);
           nameList.append(nameItem);
         });
 

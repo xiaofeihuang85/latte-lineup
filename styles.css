@@ -119,12 +119,14 @@ label {
 }
 
 input,
+textarea,
 select,
 button {
   font: inherit;
 }
 
 input,
+textarea,
 select {
   width: 100%;
   padding: 14px 16px;
@@ -135,10 +137,16 @@ select {
 }
 
 input:focus,
+textarea:focus,
 select:focus,
 button:focus {
   outline: 3px solid rgba(138, 83, 52, 0.2);
   outline-offset: 2px;
+}
+
+textarea {
+  min-height: 96px;
+  resize: vertical;
 }
 
 .form-actions {
@@ -243,16 +251,35 @@ button:hover {
 }
 
 .name-pill {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
+  width: 100%;
   padding: 8px 12px;
-  border-radius: 999px;
+  border-radius: 18px;
   background: rgba(255, 250, 242, 0.95);
   border: 1px solid rgba(95, 53, 32, 0.09);
 }
 
+.order-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.order-name {
+  font-weight: 700;
+}
+
+.order-note {
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: var(--text-soft);
+}
+
 .remove-button {
+  flex: 0 0 auto;
   padding: 4px 9px;
   font-size: 0.82rem;
 }
