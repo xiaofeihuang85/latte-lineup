@@ -19,7 +19,7 @@
     <section class="panel form-panel">
       <div>
         <h2>Add an order</h2>
-        <p class="panel-copy">Orders are saved in this browser so the list sticks around after refresh.</p>
+        <p class="panel-copy">Orders are saved to a shared Google Sheet so everyone sees the same list.</p>
       </div>
 
       <form id="order-form" class="order-form" novalidate>
@@ -68,9 +68,12 @@
       <div class="summary-header">
         <div>
           <h2>Grouped orders</h2>
-          <p class="panel-copy">Names are grouped by milk first, then syrup.</p>
+          <p class="panel-copy">Names are grouped by milk first, then syrup, using the latest shared sheet data.</p>
         </div>
-        <p id="order-count" class="order-count">0 orders</p>
+        <div class="summary-tools">
+          <p id="order-count" class="order-count">0 orders</p>
+          <button type="button" id="refresh-orders" class="secondary-button">Refresh</button>
+        </div>
       </div>
 
       <div id="grouped-orders" class="grouped-orders" aria-live="polite"></div>
