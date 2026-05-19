@@ -1,5 +1,5 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxYdY9rWDEQRcBIMzFtWY7pUy-Rwbf5Q0xdT5pEFfUDsRx2V55kN441ilQO0OnVsD-Q/exec";
-const APPS_SCRIPT_URL_PLACEHOLDER = "https://script.google.com/macros/s/AKfycbxYdY9rWDEQRcBIMzFtWY7pUy-Rwbf5Q0xdT5pEFfUDsRx2V55kN441ilQO0OnVsD-Q/exec";
+const APPS_SCRIPT_URL_PLACEHOLDER = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
 
 const milkOrder = ["2%", "2% lactose free", "soy", "oat"];
 const syrupOrder = [
