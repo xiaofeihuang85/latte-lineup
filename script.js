@@ -1,15 +1,4 @@
 const STORAGE_KEY = "latte-lineup-orders";
-
-const milkOrder = ["2%", "2% lactose free", "soy", "oat"];
-const syrupOrder = [
-  "pumpkin pie",
-  "pumpkin pie sugar free",
-  "peanut butter cup",
-  "bourbon caramel",
-  "brown sugar cinnamon",
-  "peppermint sugar free"
-];
-
 const NOTE_LIMIT = 160;
 
 const form = document.getElementById("order-form");
@@ -22,6 +11,8 @@ const groupedOrders = document.getElementById("grouped-orders");
 const orderCount = document.getElementById("order-count");
 const clearOrdersButton = document.getElementById("clear-orders");
 const emptyStateTemplate = document.getElementById("empty-state-template");
+const milkOrder = getOptionValues(milkSelect);
+const syrupOrder = getOptionValues(syrupSelect);
 
 let orders = loadOrders();
 
@@ -104,7 +95,7 @@ function loadOrders() {
       return [];
     }
 
-    return parsed.filter(isValidOrder).map(normalizeOrder);
+    return parsed.map(normalizeOrder).filter(isValidOrder);
   } catch (error) {
     console.error("Unable to read saved orders.", error);
     return [];
@@ -120,15 +111,21 @@ function isValidOrder(order) {
     order &&
     typeof order.id === "string" &&
     typeof order.name === "string" &&
+    order.name &&
     (typeof order.note === "undefined" || typeof order.note === "string") &&
-    milkOrder.includes(order.milk) &&
-    syrupOrder.includes(order.syrup)
+    typeof order.milk === "string" &&
+    order.milk &&
+    typeof order.syrup === "string" &&
+    order.syrup
   );
 }
 
 function normalizeOrder(order) {
   return {
     ...order,
+    name: typeof order.name === "string" ? order.name.trim() : "",
+    milk: typeof order.milk === "string" ? order.milk.trim() : "",
+    syrup: typeof order.syrup === "string" ? order.syrup.trim() : "",
     note: typeof order.note === "string" ? order.note.trim() : ""
   };
 }
@@ -148,8 +145,9 @@ function renderOrders() {
   }
 
   const grouped = groupOrders(orders);
+  const milkGroups = sortGroupKeys(grouped, milkOrder);
 
-  milkOrder.forEach((milk) => {
+  milkGroups.forEach((milk) => {
     const syrupGroups = grouped[milk];
 
     if (!syrupGroups) {
@@ -165,8 +163,9 @@ function renderOrders() {
 
     const syrupGrid = document.createElement("div");
     syrupGrid.className = "syrup-grid";
+    const syrupGroupsInOrder = sortGroupKeys(syrupGroups, syrupOrder);
 
-    syrupOrder.forEach((syrup) => {
+    syrupGroupsInOrder.forEach((syrup) => {
       const names = syrupGroups[syrup];
 
       if (!names || !names.length) {
@@ -238,6 +237,37 @@ function groupOrders(orderList) {
     result[order.milk][order.syrup].push(order);
     return result;
   }, {});
+}
+
+function getOptionValues(select) {
+  return Array.from(select.options)
+    .map((option) => option.value.trim())
+    .filter(Boolean);
+}
+
+function sortGroupKeys(groups, preferredOrder) {
+  const preferredPositions = new Map(
+    preferredOrder.map((value, index) => [value, index])
+  );
+
+  return Object.keys(groups).sort((left, right) => {
+    const leftPosition = preferredPositions.get(left);
+    const rightPosition = preferredPositions.get(right);
+
+    if (typeof leftPosition === "number" && typeof rightPosition === "number") {
+      return leftPosition - rightPosition;
+    }
+
+    if (typeof leftPosition === "number") {
+      return -1;
+    }
+
+    if (typeof rightPosition === "number") {
+      return 1;
+    }
+
+    return left.localeCompare(right);
+  });
 }
 
 function createInfoState(message) {
