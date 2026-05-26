@@ -15,6 +15,7 @@ const milkOrder = getOptionValues(milkSelect);
 const syrupOrder = getOptionValues(syrupSelect);
 
 let orders = loadOrders();
+persistOrders();
 
 renderOrders();
 
@@ -110,6 +111,7 @@ function isValidOrder(order) {
   return Boolean(
     order &&
     typeof order.id === "string" &&
+    order.id &&
     typeof order.name === "string" &&
     order.name &&
     (typeof order.note === "undefined" || typeof order.note === "string") &&
@@ -121,12 +123,18 @@ function isValidOrder(order) {
 }
 
 function normalizeOrder(order) {
+  const id = normalizeText(order?.id);
+  const name = normalizeText(order?.name);
+  const milk = normalizeText(order?.milk);
+  const syrup = normalizeText(order?.syrup);
+
   return {
     ...order,
-    name: typeof order.name === "string" ? order.name.trim() : "",
-    milk: typeof order.milk === "string" ? order.milk.trim() : "",
-    syrup: typeof order.syrup === "string" ? order.syrup.trim() : "",
-    note: typeof order.note === "string" ? order.note.trim() : ""
+    id: id || crypto.randomUUID(),
+    name,
+    milk,
+    syrup,
+    note: normalizeText(order?.note)
   };
 }
 
@@ -243,6 +251,10 @@ function getOptionValues(select) {
   return Array.from(select.options)
     .map((option) => option.value.trim())
     .filter(Boolean);
+}
+
+function normalizeText(value) {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function sortGroupKeys(groups, preferredOrder) {
